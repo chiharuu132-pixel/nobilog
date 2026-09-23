@@ -8,6 +8,7 @@ import '../domain/services/growth_engine.dart';
 import '../domain/services/day_resolver.dart';
 import '../domain/models/habit_with_creature.dart';
 import '../domain/services/chart_builder.dart';
+import '../application/services/backup_service.dart';
 
 // --- インフラ層のProvider ---
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -39,6 +40,11 @@ final habitRepositoryProvider = Provider<HabitRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final evolutionEngine = ref.watch(evolutionEngineProvider);
   return HabitRepositoryImpl(db: db, evolutionEngine: evolutionEngine);
+});
+
+final backupServiceProvider = Provider<BackupService>((ref) {
+  final db = ref.watch(databaseProvider);
+  return BackupService(db);
 });
 
 // --- UI状態管理 (AsyncNotifier) ---
@@ -115,7 +121,7 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
     );
     ref.invalidateSelf();
   }
-  
+
   Future<void> archiveHabit(String habitId) async {
     await ref.read(habitRepositoryProvider).archiveHabit(habitId);
     ref.invalidateSelf();

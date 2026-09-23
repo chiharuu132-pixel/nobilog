@@ -1,3 +1,7 @@
+import 'dart:io';
+import 'package:file_selector/file_selector.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,12 +131,126 @@ class HomePage extends ConsumerWidget {
     );
   }
 
+  void _showBackupDialog(BuildContext context, String title, String initialText, {required bool isExport, required WidgetRef ref}) {
+    final controller = TextEditingController(text: initialText);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          maxLines: 8,
+          readOnly: isExport,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: isExport ? '' : 'ここにJSONを貼り付けてください',
+          ),
+          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('閉じる')),
+          if (!isExport)
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref.read(backupServiceProvider).importFromJson(controller.text);
+                  ref.read(habitListProvider.notifier).ref.invalidateSelf();
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('データを正常に復元しました。')),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('復元に失敗しました: $e'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+              child: const Text('復元実行'),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final habitsAsync = ref.watch(habitListProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('のびログ')),
+      appBar: AppBar(
+        title: const Text('のびログ'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (value) async {
+              if (value == 'export') {
+                // 1. JSON文字列を生成
+                final jsonStr = await ref.read(backupServiceProvider).exportToJson();
+                
+                // 2. 一時フォルダにファイルとして書き出し
+                final tempDir = await getTemporaryDirectory();
+                final file = File('${tempDir.path}/nobilog_backup.json');
+                await file.writeAsString(jsonStr);
+
+                // 3. OSの共有機能でファイルを保存・送信
+                if (context.mounted) {
+                  // RenderBox から表示位置・サイズを取得
+                  final box = context.findRenderObject() as RenderBox?;
+                  
+                  await Share.shareXFiles(
+                    [XFile(file.path)],
+                    text: 'のびログ バックアップデータ',
+                    // iPad向けの表示位置を指定（nullチェック付き）
+                    sharePositionOrigin: box != null
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null,
+                  );
+                }
+              } else if (value == 'import') {
+                // 1. ファイルピッカーでJSONファイルを選択
+                const typeGroup = XTypeGroup(
+                  label: 'JSONs',
+                  extensions: ['json'],
+                  // iOS / macOS 向けに UTI を追加
+                  uniformTypeIdentifiers: ['public.json'],
+                );
+                final XFile? file = await openFile(acceptedTypeGroups: [typeGroup]);
+                
+                if (file != null) {
+                  try {
+                    // 2. ファイル内容を読み込んで復元
+                    final jsonStr = await file.readAsString();
+                    await ref.read(backupServiceProvider).importFromJson(jsonStr);
+                    
+                    // 3. 状態とグラフのキャッシュを完全にクリア（再描画）
+                    ref.invalidate(habitListProvider);
+                    ref.invalidate(habitChartProvider); // グラフのキャッシュも全破棄
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('ファイルからデータを正常に復元しました。')),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('復元に失敗しました: $e'), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'export', child: Text('バックアップをファイル保存')),
+              const PopupMenuItem(value: 'import', child: Text('ファイルから復元')),
+            ],
+          ),
+        ],
+      ),
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('エラーが発生しました: $error')),

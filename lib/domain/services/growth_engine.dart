@@ -50,7 +50,7 @@ class GrowthEngineImpl implements GrowthEngine {
   @override
   GrowthDecision decidePenalty({required int currentPoints, Uint8List? seed}) {
     final rng = seed != null ? RandomGenerator.fromSeed(seed) : RandomGenerator();
-    final percent = rng.generateNormal(10.0, 3.0); // N(10,3)%
+    final percent = rng.generateNormal(15.0, 3.0); // N(10,3)%
     final penaltyAmount = ((currentPoints * percent) / 100.0).round();
     
     // 累積ポイントがマイナスにならないよう、現在のポイントを上限に減少

@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "createdAt": "2026-09-23T10:03:24.718513Z",
+  "habits": [
+    {
+      "id": "1790149871305",
+      "title": "あ",
+      "startDay": "2026-09-23",
+      "creatureId": "c_1790149871305",
+      "createdAtUtc": "2026-09-23T16:51:11.000",
+      "revision": 1,
+      "archivedAtUtc": null,
+      "archivedFromDay": null
+    },
+    {
+      "id": "1790149874273",
+      "title": "い",
+      "startDay": "2026-09-23",
+      "creatureId": "c_1790149874273",
+      "createdAtUtc": "2026-09-23T16:51:14.000",
+      "revision": 1,
+      "archivedAtUtc": null,
+      "archivedFromDay": null
+    },
+    {
+      "id": "1790149876268",
+      "title": "う",
+      "startDay": "2026-09-23",
+      "creatureId": "c_1790149876268",
+      "createdAtUtc": "2026-09-23T16:51:16.000",
+      "revision": 1,
+      "archivedAtUtc": null,
+      "archivedFromDay": null
+    }
+  ],
+  "creatures": [
+    {
+      "id": "c_1790149871305",
+      "habitId": "1790149871305",
+      "species": "speciesA",
+      "nickname": null,
+      "growthMode": "normalDistribution",
+      "growthSeed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "growthAlgorithmVersion": 1,
+      "nextGrantOrdinal": 1,
+      "maxStageReached": 1,
+      "createdAtUtc": "2026-09-23T16:51:11.000"
+    },
+    {
+      "id": "c_1790149874273",
+      "habitId": "1790149874273",
+      "species": "speciesA",
+      "nickname": null,
+      "growthMode": "normalDistribution",
+      "growthSeed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "growthAlgorithmVersion": 1,
+      "nextGrantOrdinal": 1,
+      "maxStageReached": 1,
+      "createdAtUtc": "2026-09-23T16:51:14.000"
+    },
+    {
+      "id": "c_1790149876268",
+      "habitId": "1790149876268",
+      "species": "speciesA",
+      "nickname": null,
+      "growthMode": "normalDistribution",
+      "growthSeed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "growthAlgorithmVersion": 1,
+      "nextGrantOrdinal": 1,
+      "maxStageReached": 1,
+      "createdAtUtc": "2026-09-23T16:51:16.000"
+    }
+  ],
+  "dayRecords": [
+    {
+      "habitId": "1790149871305",
+      "day": "2026-09-23",
+      "state": "standard",
+      "firstRecordedAtUtc": "2026-09-23T19:02:08.000",
+      "updatedAtUtc": "2026-09-23T19:02:08.000",
+      "recordedZoneId": "Asia/Tokyo",
+      "recordedBoundaryHour": 4,
+      "isBackfilled": false
+    },
+    {
+      "habitId": "1790149874273",
+      "day": "2026-09-23",
+      "state": "missed",
+      "firstRecordedAtUtc": "2026-09-23T18:49:08.000",
+      "updatedAtUtc": "2026-09-23T18:49:08.000",
+      "recordedZoneId": "Asia/Tokyo",
+      "recordedBoundaryHour": 4,
+      "isBackfilled": false
+    },
+    {
+      "habitId": "1790149876268",
+      "day": "2026-09-23",
+      "state": "minimum",
+      "firstRecordedAtUtc": "2026-09-23T17:25:49.000",
+      "updatedAtUtc": "2026-09-23T17:25:49.000",
+      "recordedZoneId": "Asia/Tokyo",
+      "recordedBoundaryHour": 4,
+      "isBackfilled": false
+    },
+    {
+      "habitId": "1790149871305",
+      "day": "2026-09-22",
+      "state": "missed",
+      "firstRecordedAtUtc": "2026-09-23T18:48:52.000",
+      "updatedAtUtc": "2026-09-23T18:48:52.000",
+      "recordedZoneId": "Asia/Tokyo",
+      "recordedBoundaryHour": 4,
+      "isBackfilled": false
+    },
+    {
+      "habitId": "1790149874273",
+      "day": "2026-09-22",
+      "state": "standard",
+      "firstRecordedAtUtc": "2026-09-23T18:48:58.000",
+      "updatedAtUtc": "2026-09-23T18:48:58.000",
+      "recordedZoneId": "Asia/Tokyo",
+      "recordedBoundaryHour": 4,
+      "isBackfilled": false
+    }
+  ],
+  "growthGrants": [
+    {
+      "id": "1790149876268_2026-09-23_1790151949817",
+      "habitId": "1790149876268",
+      "creatureId": "c_1790149876268",
+      "day": "2026-09-23",
+      "ordinal": 1790151949817,
+      "amount": 5,
+      "algorithmVersion": 1,
+      "issuedAtUtc": "2026-09-23T17:25:49.000"
+    },
+    {
+      "id": "1790149871305_2026-09-22_1790156932543",
+      "habitId": "1790149871305",
+      "creatureId": "c_1790149871305",
+      "day": "2026-09-22",
+      "ordinal": 1790156932543,
+      "amount": 50,
+      "algorithmVersion": 1,
+      "issuedAtUtc": "2026-09-23T18:48:52.000"
+    },
+    {
+      "id": "1790149874273_2026-09-22_1790156938076",
+      "habitId": "1790149874273",
+      "creatureId": "c_1790149874273",
+      "day": "2026-09-22",
+      "ordinal": 1790156938076,
+      "amount": 7,
+      "algorithmVersion": 1,
+      "issuedAtUtc": "2026-09-23T18:48:58.000"
+    },
+    {
+      "id": "1790149874273_2026-09-23_1790156948491",
+      "habitId": "1790149874273",
+      "creatureId": "c_1790149874273",
+      "day": "2026-09-23",
+      "ordinal": 1790156948491,
+      "amount": -1,
+      "algorithmVersion": 1,
+      "issuedAtUtc": "2026-09-23T18:49:08.000"
+    },
+    {
+      "id": "1790149871305_2026-09-23_1790157728173",
+      "habitId": "1790149871305",
+      "creatureId": "c_1790149871305",
+      "day": "2026-09-23",
+      "ordinal": 1790157728173,
+      "amount": 10,
+      "algorithmVersion": 1,
+      "issuedAtUtc": "2026-09-23T19:02:08.000"
+    }
+  ]
+}
