@@ -10,6 +10,8 @@ abstract interface class HabitRepository {
     required String title,
     required String species,
   });
+  Future<void> updateHabitTitle(String habitId, String newTitle);
+  Future<void> deleteHabit(String habitId);
   Future<void> archiveHabit(String habitId);
   Future<void> applyGrowth({
     required String habitId,

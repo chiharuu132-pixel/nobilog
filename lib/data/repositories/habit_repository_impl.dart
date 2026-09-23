@@ -106,6 +106,23 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
+  Future<void> updateHabitTitle(String habitId, String newTitle) async {
+    await (db.update(db.habits)..where((tbl) => tbl.id.equals(habitId)))
+        .write(HabitsCompanion(title: drift.Value(newTitle)));
+  }
+
+  @override
+  Future<void> deleteHabit(String habitId) async {
+    await db.transaction(() async {
+      // 関連するデータをすべて削除
+      await (db.delete(db.growthGrants)..where((tbl) => tbl.habitId.equals(habitId))).go();
+      await (db.delete(db.dayRecords)..where((tbl) => tbl.habitId.equals(habitId))).go();
+      await (db.delete(db.creatures)..where((tbl) => tbl.habitId.equals(habitId))).go();
+      await (db.delete(db.habits)..where((tbl) => tbl.id.equals(habitId))).go();
+    });
+  }
+
+  @override
   Future<void> applyGrowth({
     required String habitId,
     required String day,

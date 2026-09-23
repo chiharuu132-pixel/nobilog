@@ -88,6 +88,19 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
     return true;
   }
 
+  Future<void> updateHabitTitle(String habitId, String newTitle) async {
+    if (newTitle.trim().isEmpty) return;
+    await ref.read(habitRepositoryProvider).updateHabitTitle(habitId, newTitle.trim());
+    ref.invalidateSelf();
+    ref.invalidate(archivedHabitListProvider);
+  }
+
+  Future<void> deleteHabit(String habitId) async {
+    await ref.read(habitRepositoryProvider).deleteHabit(habitId);
+    ref.invalidateSelf();
+    ref.invalidate(archivedHabitListProvider);
+  }
+
   /// 任意の日付（今日 or 昨日）へ記録
   Future<void> recordForDay({
     required String habitId,
