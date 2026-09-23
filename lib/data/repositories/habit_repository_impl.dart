@@ -131,6 +131,31 @@ class HabitRepositoryImpl implements HabitRepository {
     });
   }
   @override
+  Future<int> countActive() async {
+    final habits = await (db.select(db.habits)
+          ..where((tbl) => tbl.archivedAtUtc.isNull()))
+        .get();
+    return habits.length;
+  }
+
+  @override
+  Future<void> clearRecord({
+    required String habitId,
+    required String day,
+  }) async {
+    await db.transaction(() async {
+      // DayRecord を 'cancelled' に更新（または削除）
+      await (db.update(db.dayRecords)
+            ..where((tbl) => tbl.habitId.equals(habitId) & tbl.day.equals(day)))
+          .write(const DayRecordsCompanion(state: Value('cancelled')));
+
+      // その日の GrowthGrant を無効化（削除）
+      await (db.delete(db.growthGrants)
+            ..where((tbl) => tbl.habitId.equals(habitId) & tbl.day.equals(day)))
+          .go();
+    });
+  }
+  @override
 Future<List<ChartPoint>> getChartSeries({
   required String habitId,
   required LocalDate startDay,

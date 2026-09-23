@@ -39,7 +39,6 @@ class NobilogApp extends StatelessWidget {
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
-  // --- 新規作成ダイアログ ---
   Future<void> _showAddHabitDialog(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
     await showDialog(
@@ -49,7 +48,10 @@ class HomePage extends ConsumerWidget {
           title: const Text('新しい習慣を作成'),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(hintText: '例: 毎朝のランニング'),
+            decoration: const InputDecoration(
+              hintText: '例: 毎朝のランニング',
+              helperText: '※最大3件まで登録可能',
+            ),
             autofocus: true,
           ),
           actions: [
@@ -58,9 +60,22 @@ class HomePage extends ConsumerWidget {
               child: const Text('キャンセル'),
             ),
             FilledButton(
-              onPressed: () {
-                ref.read(habitListProvider.notifier).createHabit(controller.text);
-                Navigator.of(context).pop();
+              onPressed: () async {
+                final success = await ref
+                    .read(habitListProvider.notifier)
+                    .createHabit(controller.text);
+                
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  if (!success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('アクティブな習慣は最大3件までです。'),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                }
               },
               child: const Text('追加'),
             ),
@@ -81,14 +96,15 @@ class HomePage extends ConsumerWidget {
         error: (error, stack) => Center(child: Text('エラーが発生しました: $error')),
         data: (habits) {
           if (habits.isEmpty) {
-            return const Center(child: Text('右下のボタンから習慣を追加してください'));
+            return const Center(child: Text('右下のボタンから習慣を追加してください（最大3件）'));
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: habits.length,
             itemBuilder: (context, index) {
               final habit = habits[index];
-              final isRecordedToday = habit.todayRecordState != null;
+              final isRecordedToday = habit.todayRecordState != null &&
+                  habit.todayRecordState != 'cancelled';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -106,7 +122,6 @@ class HomePage extends ConsumerWidget {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                           ),
-                          // --- キャラクター表示（ダミー）にスケールを適用 ---
                           Transform.scale(
                             scale: habit.visualScale,
                             child: CircleAvatar(
@@ -127,9 +142,9 @@ class HomePage extends ConsumerWidget {
                         child: HabitChartWidget(habitId: habit.habitId),
                       ),
                       const SizedBox(height: 16),
-                      
-                      // --- 記録制御 ---
-                      if (isRecordedToday)
+
+                      // --- 本日の記録制御 ---
+                      if (isRecordedToday) ...[
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.all(12),
@@ -140,45 +155,93 @@ class HomePage extends ConsumerWidget {
                           child: Text(
                             '本日の記録: ${habit.todayRecordState}',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )
-                      else
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              await ref
+                                  .read(habitListProvider.notifier)
+                                  .clearTodayRecord(habit.habitId);
+                              ref.invalidate(habitChartProvider(habit.habitId));
+                            },
+                            icon: const Icon(Icons.undo, size: 16),
+                            label: const Text('本日の記録を取り消す'),
+                          ),
+                        ),
+                      ] else ...[
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
                             ElevatedButton(
                               onPressed: () async {
-                                await ref.read(habitListProvider.notifier).recordStandard(habit.habitId);
+                                await ref
+                                    .read(habitListProvider.notifier)
+                                    .recordForDay(
+                                      habitId: habit.habitId,
+                                      targetState: 'standard',
+                                      offsetDays: 0,
+                                      currentPoints: habit.totalPoints,
+                                    );
                                 ref.invalidate(habitChartProvider(habit.habitId));
                               },
                               child: const Text('通常'),
                             ),
                             ElevatedButton(
                               onPressed: () async {
-                                await ref.read(habitListProvider.notifier).recordMinimum(habit.habitId);
+                                await ref
+                                    .read(habitListProvider.notifier)
+                                    .recordForDay(
+                                      habitId: habit.habitId,
+                                      targetState: 'minimum',
+                                      offsetDays: 0,
+                                      currentPoints: habit.totalPoints,
+                                    );
                                 ref.invalidate(habitChartProvider(habit.habitId));
                               },
-                              child: const Text('最低限'),
+                              child: const Text('最低'),
                             ),
                             OutlinedButton(
                               onPressed: () async {
-                                await ref.read(habitListProvider.notifier).recordRest(habit.habitId);
+                                await ref
+                                    .read(habitListProvider.notifier)
+                                    .recordForDay(
+                                      habitId: habit.habitId,
+                                      targetState: 'rest',
+                                      offsetDays: 0,
+                                      currentPoints: habit.totalPoints,
+                                    );
                                 ref.invalidate(habitChartProvider(habit.habitId));
                               },
                               child: const Text('休息'),
                             ),
                             FilledButton.tonal(
                               onPressed: () async {
-                                await ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints);
+                                await ref
+                                    .read(habitListProvider.notifier)
+                                    .recordForDay(
+                                      habitId: habit.habitId,
+                                      targetState: 'missed',
+                                      offsetDays: 0,
+                                      currentPoints: habit.totalPoints,
+                                    );
                                 ref.invalidate(habitChartProvider(habit.habitId));
                               },
-                              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
-                              child: const Text('未達成', style: TextStyle(color: Colors.red)),
+                              style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red.shade100),
+                              child: const Text('未達成',
+                                  style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
+                      ],
                     ],
                   ),
                 ),

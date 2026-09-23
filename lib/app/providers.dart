@@ -49,75 +49,68 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
     return ref.watch(habitRepositoryProvider).findAllActive(today);
   }
 
-  String _getOperationalDay() {
+  String _getOperationalDay({int offsetDays = 0}) {
     final resolver = ref.read(dayResolverProvider);
-    return resolver.resolveOperationalDay(DateTime.now()).toIso8601Date();
+    final dt = DateTime.now().add(Duration(days: offsetDays));
+    return resolver.resolveOperationalDay(dt).toIso8601Date();
   }
 
-  // --- ダミーメソッドから本番用に変更 ---
-  Future<void> createHabit(String title) async {
-    if (title.trim().isEmpty) return;
-    await ref.read(habitRepositoryProvider).createHabit(
+  /// 習慣の作成（最大3件制限付き）
+  Future<bool> createHabit(String title) async {
+    if (title.trim().isEmpty) return false;
+
+    final repo = ref.read(habitRepositoryProvider);
+    final count = await repo.countActive();
+
+    // 仕様書: 同時利用できるアクティブ習慣は最大3件
+    if (count >= 3) {
+      return false; // 上限エラー
+    }
+
+    await repo.createHabit(
       title: title.trim(),
-      species: 'normal_species', // 将来的に選べるようにする
+      species: 'normal_species',
     );
     ref.invalidateSelf();
+    return true;
   }
 
-  /// 通常ライン達成
-  Future<void> recordStandard(String habitId) async {
+  /// 任意の日付（今日 or 昨日）へ記録
+  Future<void> recordForDay({
+    required String habitId,
+    required String targetState, // 'standard' | 'minimum' | 'rest' | 'missed'
+    required int offsetDays,     // 0: 今日, -1: 昨日
+    required int currentPoints,
+  }) async {
+    final day = _getOperationalDay(offsetDays: offsetDays);
     final engine = ref.read(growthEngineProvider);
-    final decision = engine.decideStandard();
-    final day = _getOperationalDay();
+
+    int deltaPoints = 0;
+    if (targetState == 'standard') {
+      deltaPoints = engine.decideStandard().amount;
+    } else if (targetState == 'minimum') {
+      deltaPoints = engine.decideMinimum().amount;
+    } else if (targetState == 'missed') {
+      deltaPoints = engine.decidePenalty(currentPoints: currentPoints).amount;
+    } else if (targetState == 'rest') {
+      deltaPoints = 0;
+    }
 
     await ref.read(habitRepositoryProvider).applyGrowth(
       habitId: habitId,
       day: day,
-      state: 'standard',
-      deltaPoints: decision.amount,
+      state: targetState,
+      deltaPoints: deltaPoints,
     );
     ref.invalidateSelf();
   }
 
-  /// 最低ライン達成
-  Future<void> recordMinimum(String habitId) async {
-    final engine = ref.read(growthEngineProvider);
-    final decision = engine.decideMinimum();
-    final day = _getOperationalDay();
-
-    await ref.read(habitRepositoryProvider).applyGrowth(
+  /// 当日の記録取り消し
+  Future<void> clearTodayRecord(String habitId) async {
+    final today = _getOperationalDay();
+    await ref.read(habitRepositoryProvider).clearRecord(
       habitId: habitId,
-      day: day,
-      state: 'minimum',
-      deltaPoints: decision.amount,
-    );
-    ref.invalidateSelf();
-  }
-
-  /// 未達成 (ペナルティ)
-  Future<void> recordMissed(String habitId, int currentPoints) async {
-    final engine = ref.read(growthEngineProvider);
-    final decision = engine.decidePenalty(currentPoints: currentPoints);
-    final day = _getOperationalDay();
-
-    await ref.read(habitRepositoryProvider).applyGrowth(
-      habitId: habitId,
-      day: day,
-      state: 'missed',
-      deltaPoints: decision.amount,
-    );
-    ref.invalidateSelf();
-  }
-
-  /// 休息日（ポイント増減なし）
-  Future<void> recordRest(String habitId) async {
-    final day = _getOperationalDay();
-
-    await ref.read(habitRepositoryProvider).applyGrowth(
-      habitId: habitId,
-      day: day,
-      state: 'rest',
-      deltaPoints: 0, // ポイント増減なし
+      day: today,
     );
     ref.invalidateSelf();
   }
