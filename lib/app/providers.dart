@@ -150,3 +150,7 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
 final habitListProvider = AsyncNotifierProvider<HabitListNotifier, List<HabitWithCreature>>(() {
   return HabitListNotifier();
 });
+
+final archivedHabitListProvider = FutureProvider<List<HabitWithCreature>>((ref) async {
+  return ref.watch(habitRepositoryProvider).findArchived();
+});

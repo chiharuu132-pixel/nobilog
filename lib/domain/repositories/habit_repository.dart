@@ -5,6 +5,7 @@ import '../../domain/services/chart_builder.dart';
 abstract interface class HabitRepository {
   Future<List<HabitWithCreature>> findAllActive(String today, String yesterday);
   Future<int> countActive();
+  Future<List<HabitWithCreature>> findArchived();
   Future<void> createHabit({
     required String title,
     required String species,

@@ -153,6 +153,39 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
+  Future<List<HabitWithCreature>> findArchived() async {
+    final habits = await (db.select(db.habits)..where((tbl) => tbl.archivedAtUtc.isNotNull())).get();
+    final result = <HabitWithCreature>[];
+
+    for (final habit in habits) {
+      final creature = await (db.select(db.creatures)
+            ..where((tbl) => tbl.id.equals(habit.creatureId)))
+          .getSingle();
+
+      final grants = await (db.select(db.growthGrants)
+            ..where((tbl) => tbl.habitId.equals(habit.id)))
+          .get();
+
+      final totalPoints = grants.fold<int>(0, (sum, g) => sum + g.amount);
+      final stage = evolutionEngine.calculateStage(totalPoints);
+      final scale = evolutionEngine.visualScale(totalPoints: totalPoints);
+
+      result.add(
+        HabitWithCreature(
+          habitId: habit.id,
+          title: habit.title,
+          creatureId: creature.id,
+          species: creature.species,
+          totalPoints: totalPoints,
+          stage: stage,
+          visualScale: scale,
+        ),
+      );
+    }
+    return result;
+  }
+
+  @override
   Future<void> clearRecord({
     required String habitId,
     required String day,
@@ -170,26 +203,26 @@ class HabitRepositoryImpl implements HabitRepository {
     });
   }
   @override
-Future<List<ChartPoint>> getChartSeries({
-  required String habitId,
-  required LocalDate startDay,
-  required LocalDate endDay,
-}) async {
-  final grants = await (db.select(db.growthGrants)
-        ..where((tbl) => tbl.habitId.equals(habitId)))
-      .get();
+  Future<List<ChartPoint>> getChartSeries({
+    required String habitId,
+    required LocalDate startDay,
+    required LocalDate endDay,
+  }) async {
+    final grants = await (db.select(db.growthGrants)
+          ..where((tbl) => tbl.habitId.equals(habitId)))
+        .get();
 
-  // 日付ごとの増減量を集計
-  final dailyGrants = <String, int>{};
-  for (final grant in grants) {
-    dailyGrants[grant.day] = (dailyGrants[grant.day] ?? 0) + grant.amount;
+    // 日付ごとの増減量を集計
+    final dailyGrants = <String, int>{};
+    for (final grant in grants) {
+      dailyGrants[grant.day] = (dailyGrants[grant.day] ?? 0) + grant.amount;
+    }
+
+    const builder = ChartBuilderImpl();
+    return builder.buildSeries(
+      dailyGrants: dailyGrants,
+      startDay: startDay,
+      endDay: endDay,
+    );
   }
-
-  const builder = ChartBuilderImpl();
-  return builder.buildSeries(
-    dailyGrants: dailyGrants,
-    startDay: startDay,
-    endDay: endDay,
-  );
-}
 }

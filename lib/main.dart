@@ -41,6 +41,55 @@ class NobilogApp extends StatelessWidget {
   }
 }
 
+class ArchivedHabitsPage extends ConsumerWidget {
+  const ArchivedHabitsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final archivedAsync = ref.watch(archivedHabitListProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('卒業名簿')),
+      body: archivedAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, s) => Center(child: Text('エラーが発生しました: $e')),
+        data: (habits) {
+          if (habits.isEmpty) {
+            return const Center(child: Text('卒業した習慣はまだありません。'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: habits.length,
+            itemBuilder: (context, index) {
+              final habit = habits[index];
+              return Card(
+                color: Colors.amber.shade50, // 卒業っぽく色を変える
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(16),
+                  leading: Transform.scale(
+                    scale: habit.visualScale,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.amber,
+                      child: Text('St.${habit.stage}'),
+                    ),
+                  ),
+                  title: Text(
+                    habit.title,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('最終累積ポイント: ${habit.totalPoints} pt'),
+                  trailing: const Icon(Icons.workspace_premium, color: Colors.amber),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -242,6 +291,35 @@ class HomePage extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.green),
+              child: Text('のびログ メニュー', style: TextStyle(color: Colors.white, fontSize: 24)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('ホーム (アクティブな習慣)'),
+              onTap: () => Navigator.pop(context),
+            ),
+            ListTile(
+              leading: const Icon(Icons.workspace_premium),
+              title: const Text('卒業名簿'),
+              onTap: () {
+                Navigator.pop(context); // ドロワーを閉じる
+                // アーカイブ一覧のキャッシュを更新して画面遷移
+                ref.invalidate(archivedHabitListProvider);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ArchivedHabitsPage()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
