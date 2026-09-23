@@ -7,6 +7,7 @@ class HabitWithCreature {
   final int stage;
   final double visualScale;
   final String? todayRecordState;
+  final String? yesterdayRecordState; // 追加: 昨日の記録状態
 
   HabitWithCreature({
     required this.habitId,
@@ -17,5 +18,6 @@ class HabitWithCreature {
     required this.stage,
     required this.visualScale,
     this.todayRecordState,
+    this.yesterdayRecordState,
   });
 }

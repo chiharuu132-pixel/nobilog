@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
 
 import '../../domain/models/habit_with_creature.dart';
 import '../../domain/repositories/habit_repository.dart';
@@ -16,9 +17,10 @@ class HabitRepositoryImpl implements HabitRepository {
     required this.evolutionEngine,
   });
 
-  @override
-  Future<List<HabitWithCreature>> findAllActive(String today) async {
-    final habits = await db.select(db.habits).get();
+@override
+  Future<List<HabitWithCreature>> findAllActive(String today, String yesterday) async {
+    // アーカイブされていない(archivedAtUtcがnull)ものだけを取得
+    final habits = await (db.select(db.habits)..where((tbl) => tbl.archivedAtUtc.isNull())).get();
     final result = <HabitWithCreature>[];
 
     for (final habit in habits) {
@@ -34,9 +36,14 @@ class HabitRepositoryImpl implements HabitRepository {
       final stage = evolutionEngine.calculateStage(totalPoints);
       final scale = evolutionEngine.visualScale(totalPoints: totalPoints);
 
-      // --- 本日の記録状態を取得 ---
+      // 本日の記録
       final todayRecord = await (db.select(db.dayRecords)
             ..where((tbl) => tbl.habitId.equals(habit.id) & tbl.day.equals(today)))
+          .getSingleOrNull();
+
+      // 昨日の記録
+      final yesterdayRecord = await (db.select(db.dayRecords)
+            ..where((tbl) => tbl.habitId.equals(habit.id) & tbl.day.equals(yesterday)))
           .getSingleOrNull();
 
       result.add(
@@ -49,11 +56,18 @@ class HabitRepositoryImpl implements HabitRepository {
           stage: stage,
           visualScale: scale,
           todayRecordState: todayRecord?.state,
+          yesterdayRecordState: yesterdayRecord?.state,
         ),
       );
     }
-
     return result;
+  }
+
+  @override
+  Future<void> archiveHabit(String habitId) async {
+    final now = DateTime.now().toUtc();
+    await (db.update(db.habits)..where((tbl) => tbl.id.equals(habitId)))
+        .write(HabitsCompanion(archivedAtUtc: drift.Value(now)));
   }
 
   @override

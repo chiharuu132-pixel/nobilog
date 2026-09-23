@@ -46,7 +46,8 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   @override
   Future<List<HabitWithCreature>> build() async {
     final today = _getOperationalDay();
-    return ref.watch(habitRepositoryProvider).findAllActive(today);
+    final yesterday = _getOperationalDay(offsetDays: -1);
+    return ref.watch(habitRepositoryProvider).findAllActive(today, yesterday);
   }
 
   String _getOperationalDay({int offsetDays = 0}) {
@@ -112,6 +113,11 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
       habitId: habitId,
       day: today,
     );
+    ref.invalidateSelf();
+  }
+  
+  Future<void> archiveHabit(String habitId) async {
+    await ref.read(habitRepositoryProvider).archiveHabit(habitId);
     ref.invalidateSelf();
   }
 }

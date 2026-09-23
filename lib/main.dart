@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/providers.dart';
+import 'domain/models/habit_with_creature.dart'; // ← 追加: HabitWithCreature型を使うために必要
 import 'dart:math' as math;
 
 void main() {
@@ -83,6 +84,47 @@ class HomePage extends ConsumerWidget {
         );
       },
     );
+  } // ← 修正: _showAddHabitDialog の閉じカッコをここに配置
+
+  Future<void> _showYesterdayRecordDialog(BuildContext context, WidgetRef ref, HabitWithCreature habit) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('昨日の記録'),
+        content: const Text('昨日の達成状況を教えてください。'),
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              ref.read(habitListProvider.notifier).recordForDay(
+                habitId: habit.habitId, targetState: 'standard', offsetDays: -1, currentPoints: habit.totalPoints);
+              ref.invalidate(habitChartProvider(habit.habitId));
+              Navigator.pop(ctx);
+            },
+            child: const Text('通常'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(habitListProvider.notifier).recordForDay(
+                habitId: habit.habitId, targetState: 'minimum', offsetDays: -1, currentPoints: habit.totalPoints);
+              ref.invalidate(habitChartProvider(habit.habitId));
+              Navigator.pop(ctx);
+            },
+            child: const Text('最低'),
+          ),
+          FilledButton.tonal(
+            onPressed: () {
+              ref.read(habitListProvider.notifier).recordForDay(
+                habitId: habit.habitId, targetState: 'missed', offsetDays: -1, currentPoints: habit.totalPoints);
+              ref.invalidate(habitChartProvider(habit.habitId));
+              Navigator.pop(ctx);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
+            child: const Text('未達成', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -142,6 +184,44 @@ class HomePage extends ConsumerWidget {
                         child: HabitChartWidget(habitId: habit.habitId),
                       ),
                       const SizedBox(height: 16),
+
+                      if (habit.stage >= 3)
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: FilledButton.icon(
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('習慣の卒業'),
+                                  content: const Text('この習慣をアーカイブして、新しい習慣の枠を空けますか？\n（データは保存されます）'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('キャンセル')),
+                                    FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('卒業する')),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                ref.read(habitListProvider.notifier).archiveHabit(habit.habitId);
+                              }
+                            },
+                            icon: const Icon(Icons.workspace_premium),
+                            label: const Text('この習慣を卒業する（アーカイブ）'),
+                            style: FilledButton.styleFrom(backgroundColor: Colors.amber.shade700),
+                          ),
+                        ),
+
+                      // --- 昨日の記録（事後入力） ---
+                      if (habit.yesterdayRecordState == null)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () => _showYesterdayRecordDialog(context, ref, habit),
+                            icon: const Icon(Icons.history, size: 16),
+                            label: const Text('昨日の記録をつける', style: TextStyle(fontSize: 12)),
+                          ),
+                        ),
 
                       // --- 本日の記録制御 ---
                       if (isRecordedToday) ...[
@@ -281,13 +361,12 @@ class HabitChartWidget extends ConsumerWidget {
           if (val > maxVal) maxVal = val;
         }
 
-        // Y軸の下限を0に固定し、上限は最低30pt（または最大値の1.2倍）に設定
         final maxY = math.max(30.0, maxVal * 1.2);
 
         return LineChart(
           LineChartData(
-            minY: 0,     // ← 追加: 下限を0に固定
-            maxY: maxY,  // ← 追加: 成長に合わせて上限を動的に設定
+            minY: 0,
+            maxY: maxY,
             gridData: const FlGridData(show: false),
             titlesData: const FlTitlesData(show: false),
             borderData: FlBorderData(show: false),
