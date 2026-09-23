@@ -39,14 +39,43 @@ class NobilogApp extends StatelessWidget {
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
+  // --- 新規作成ダイアログ ---
+  Future<void> _showAddHabitDialog(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('新しい習慣を作成'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: '例: 毎朝のランニング'),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('キャンセル'),
+            ),
+            FilledButton(
+              onPressed: () {
+                ref.read(habitListProvider.notifier).createHabit(controller.text);
+                Navigator.of(context).pop();
+              },
+              child: const Text('追加'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final habitsAsync = ref.watch(habitListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('のびログ (チャート表示)'),
-      ),
+      appBar: AppBar(title: const Text('のびログ')),
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('エラーが発生しました: $error')),
@@ -59,6 +88,8 @@ class HomePage extends ConsumerWidget {
             itemCount: habits.length,
             itemBuilder: (context, index) {
               final habit = habits[index];
+              final isRecordedToday = habit.todayRecordState != null;
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
                 child: Padding(
@@ -66,66 +97,88 @@ class HomePage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        habit.title,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 8),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('進化段階: ${habit.stage}'),
-                          const SizedBox(width: 16),
-                          Text(
-                            '累積ポイント: ${habit.totalPoints} pt',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Text(
+                              habit.title,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          // --- キャラクター表示（ダミー）にスケールを適用 ---
+                          Transform.scale(
+                            scale: habit.visualScale,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.green.shade200,
+                              child: Text('St.${habit.stage}'),
+                            ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '累積ポイント: ${habit.totalPoints} pt',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       const SizedBox(height: 16),
-
-                      // --- 折れ線チャート表示部 ---
                       SizedBox(
-                        height: 120,
+                        height: 100,
                         child: HabitChartWidget(habitId: habit.habitId),
                       ),
                       const SizedBox(height: 16),
-
-                      // --- ボタン操作群 ---
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () async {
-                              await ref.read(habitListProvider.notifier).recordStandard(habit.habitId);
-                              ref.invalidate(habitChartProvider(habit.habitId));
-                            },
-                            child: const Text('通常達成', textAlign: TextAlign.center),
+                      
+                      // --- 記録制御 ---
+                      if (isRecordedToday)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              await ref.read(habitListProvider.notifier).recordMinimum(habit.habitId);
-                              ref.invalidate(habitChartProvider(habit.habitId));
-                            },
-                            child: const Text('最低達成', textAlign: TextAlign.center),
+                          child: Text(
+                            '本日の記録: ${habit.todayRecordState}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.bold),
                           ),
-                          OutlinedButton(
-                            onPressed: () async {
-                              await ref.read(habitListProvider.notifier).recordRest(habit.habitId);
-                              ref.invalidate(habitChartProvider(habit.habitId));
-                            },
-                            child: const Text('休息', textAlign: TextAlign.center),
-                          ),
-                          FilledButton.tonal(
-                            onPressed: () async {
-                              await ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints);
-                              ref.invalidate(habitChartProvider(habit.habitId));
-                            },
-                            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
-                            child: const Text('未達成', textAlign: TextAlign.center, style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () async {
+                                await ref.read(habitListProvider.notifier).recordStandard(habit.habitId);
+                                ref.invalidate(habitChartProvider(habit.habitId));
+                              },
+                              child: const Text('通常'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () async {
+                                await ref.read(habitListProvider.notifier).recordMinimum(habit.habitId);
+                                ref.invalidate(habitChartProvider(habit.habitId));
+                              },
+                              child: const Text('最低'),
+                            ),
+                            OutlinedButton(
+                              onPressed: () async {
+                                await ref.read(habitListProvider.notifier).recordRest(habit.habitId);
+                                ref.invalidate(habitChartProvider(habit.habitId));
+                              },
+                              child: const Text('休息'),
+                            ),
+                            FilledButton.tonal(
+                              onPressed: () async {
+                                await ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints);
+                                ref.invalidate(habitChartProvider(habit.habitId));
+                              },
+                              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
+                              child: const Text('未達成', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -135,9 +188,7 @@ class HomePage extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ref.read(habitListProvider.notifier).addDummyHabit('テスト習慣 ${DateTime.now().second}');
-        },
+        onPressed: () => _showAddHabitDialog(context, ref),
         child: const Icon(Icons.add),
       ),
     );

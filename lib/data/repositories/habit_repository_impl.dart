@@ -17,7 +17,7 @@ class HabitRepositoryImpl implements HabitRepository {
   });
 
   @override
-  Future<List<HabitWithCreature>> findAllActive() async {
+  Future<List<HabitWithCreature>> findAllActive(String today) async {
     final habits = await db.select(db.habits).get();
     final result = <HabitWithCreature>[];
 
@@ -26,13 +26,18 @@ class HabitRepositoryImpl implements HabitRepository {
             ..where((tbl) => tbl.id.equals(habit.creatureId)))
           .getSingle();
 
-      // GrowthGrants から全累積ポイントを算出（正・負の合計）
       final grants = await (db.select(db.growthGrants)
             ..where((tbl) => tbl.habitId.equals(habit.id)))
           .get();
 
       final totalPoints = grants.fold<int>(0, (sum, g) => sum + g.amount);
       final stage = evolutionEngine.calculateStage(totalPoints);
+      final scale = evolutionEngine.visualScale(totalPoints: totalPoints);
+
+      // --- 本日の記録状態を取得 ---
+      final todayRecord = await (db.select(db.dayRecords)
+            ..where((tbl) => tbl.habitId.equals(habit.id) & tbl.day.equals(today)))
+          .getSingleOrNull();
 
       result.add(
         HabitWithCreature(
@@ -42,6 +47,8 @@ class HabitRepositoryImpl implements HabitRepository {
           species: creature.species,
           totalPoints: totalPoints,
           stage: stage,
+          visualScale: scale,
+          todayRecordState: todayRecord?.state,
         ),
       );
     }

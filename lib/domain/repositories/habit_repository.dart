@@ -3,7 +3,7 @@ import '../../core/local_date.dart';
 import '../../domain/services/chart_builder.dart';
 
 abstract interface class HabitRepository {
-  Future<List<HabitWithCreature>> findAllActive();
+  Future<List<HabitWithCreature>> findAllActive(String today);
   Future<void> createHabit({
     required String title,
     required String species,

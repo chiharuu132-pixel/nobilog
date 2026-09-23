@@ -5,6 +5,8 @@ class HabitWithCreature {
   final String species;
   final int totalPoints;
   final int stage;
+  final double visualScale;
+  final String? todayRecordState;
 
   HabitWithCreature({
     required this.habitId,
@@ -13,5 +15,7 @@ class HabitWithCreature {
     required this.species,
     required this.totalPoints,
     required this.stage,
+    required this.visualScale,
+    this.todayRecordState,
   });
 }

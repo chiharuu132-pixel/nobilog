@@ -8,7 +8,6 @@ import '../domain/services/growth_engine.dart';
 import '../domain/services/day_resolver.dart';
 import '../domain/models/habit_with_creature.dart';
 import '../domain/services/chart_builder.dart';
-import '../core/local_date.dart';
 
 // --- インフラ層のProvider ---
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -46,21 +45,23 @@ final habitRepositoryProvider = Provider<HabitRepository>((ref) {
 class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   @override
   Future<List<HabitWithCreature>> build() async {
-    return ref.watch(habitRepositoryProvider).findAllActive();
+    final today = _getOperationalDay();
+    return ref.watch(habitRepositoryProvider).findAllActive(today);
   }
 
-  Future<void> addDummyHabit(String title) async {
-    await ref.read(habitRepositoryProvider).createHabit(
-      title: title,
-      species: 'speciesA',
-    );
-    ref.invalidateSelf();
-  }
-
-  /// 現在時刻から運用日文字列を取得
   String _getOperationalDay() {
     final resolver = ref.read(dayResolverProvider);
     return resolver.resolveOperationalDay(DateTime.now()).toIso8601Date();
+  }
+
+  // --- ダミーメソッドから本番用に変更 ---
+  Future<void> createHabit(String title) async {
+    if (title.trim().isEmpty) return;
+    await ref.read(habitRepositoryProvider).createHabit(
+      title: title.trim(),
+      species: 'normal_species', // 将来的に選べるようにする
+    );
+    ref.invalidateSelf();
   }
 
   /// 通常ライン達成
