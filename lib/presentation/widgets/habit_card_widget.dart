@@ -33,16 +33,18 @@ class HabitCardWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 証券アプリ風ヘッダー（アイコン・タイトル・現在値）
               _buildHeader(context, ref),
-              const SizedBox(height: 8),
-              Text(
-                '累積ポイント: ${habit.totalPoints} pt',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
               const SizedBox(height: 16),
+
+              // 軸付きミニチャート（タップイベント無効化済み）
               SizedBox(
-                height: 100,
-                child: HabitChartWidget(habitId: habit.habitId),
+                height: 110,
+                child: HabitChartWidget(
+                  habitId: habit.habitId,
+                  showAxes: true,
+                  enableTouch: false,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -67,19 +69,63 @@ class HabitCardWidget extends ConsumerWidget {
 
   // --- 内部パーツ Widget ---
 
+  /// 証券アプリ銘柄表示風ヘッダー
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // アイコン（生物・段階）
+        Transform.scale(
+          scale: habit.visualScale,
+          child: CircleAvatar(
+            backgroundColor: Colors.green.shade100,
+            radius: 22,
+            child: Text(
+              'St.${habit.stage}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade900,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+
+        // 習慣名（銘柄名）
         Expanded(
           child: Text(
             habit.title,
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
+
+        // 現在値（株価風表記）
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${habit.totalPoints}',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const Text(
+              'pt (現在値)',
+              style: TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
+
+        // 設定メニュー
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, size: 20),
+          icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
           onSelected: (value) async {
             if (value == 'edit') {
               _showEditTitleDialog(context, ref);
@@ -94,14 +140,6 @@ class HabitCardWidget extends ConsumerWidget {
               child: Text('完全に削除', style: TextStyle(color: Colors.red)),
             ),
           ],
-        ),
-        const SizedBox(width: 8),
-        Transform.scale(
-          scale: habit.visualScale,
-          child: CircleAvatar(
-            backgroundColor: Colors.green.shade200,
-            child: Text('St.${habit.stage}'),
-          ),
         ),
       ],
     );
@@ -159,9 +197,9 @@ class HabitCardWidget extends ConsumerWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.grey.shade200,
+            color: Colors.grey.shade100,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
@@ -173,7 +211,6 @@ class HabitCardWidget extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
@@ -183,8 +220,8 @@ class HabitCardWidget extends ConsumerWidget {
                   .clearTodayRecord(habit.habitId);
               ref.invalidate(habitChartProvider(habit.habitId));
             },
-            icon: const Icon(Icons.undo, size: 16),
-            label: const Text('本日の記録を取り消す'),
+            icon: const Icon(Icons.undo, size: 14),
+            label: const Text('取り消す', style: TextStyle(fontSize: 12)),
           ),
         ),
       ],
@@ -244,21 +281,15 @@ class HabitCardWidget extends ConsumerWidget {
         actionsAlignment: MainAxisAlignment.spaceEvenly,
         actions: [
           ElevatedButton(
-            onPressed: () {
-              _recordYesterday(ref, ctx, 'standard');
-            },
+            onPressed: () => _recordYesterday(ref, ctx, 'standard'),
             child: const Text('通常'),
           ),
           ElevatedButton(
-            onPressed: () {
-              _recordYesterday(ref, ctx, 'minimum');
-            },
+            onPressed: () => _recordYesterday(ref, ctx, 'minimum'),
             child: const Text('最低'),
           ),
           FilledButton.tonal(
-            onPressed: () {
-              _recordYesterday(ref, ctx, 'missed');
-            },
+            onPressed: () => _recordYesterday(ref, ctx, 'missed'),
             style:
                 FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
             child: const Text('未達成', style: TextStyle(color: Colors.red)),
