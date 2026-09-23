@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../domain/models/habit_with_creature.dart';
 import '../pages/habit_detail_page.dart';
 import 'habit_chart_widget.dart';
+import 'creature_icon_widget.dart';
 
 class HabitCardWidget extends ConsumerWidget {
   final HabitWithCreature habit;
@@ -74,33 +75,33 @@ class HabitCardWidget extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // アイコン（生物・段階）
-        Transform.scale(
+        // ★ アイコン（生物の種族と段階に応じた画像・絵文字表示）
+        CreatureIconWidget(
+          species: habit.species,
+          stage: habit.stage,
           scale: habit.visualScale,
-          child: CircleAvatar(
-            backgroundColor: Colors.green.shade100,
-            radius: 22,
-            child: Text(
-              'St.${habit.stage}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade900,
-                fontSize: 12,
-              ),
-            ),
-          ),
+          radius: 22,
         ),
         const SizedBox(width: 12),
 
         // 習慣名（銘柄名）
         Expanded(
-          child: Text(
-            habit.title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                habit.title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                'Stage ${habit.stage}',
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 8),

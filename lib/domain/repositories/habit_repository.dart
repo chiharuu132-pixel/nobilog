@@ -6,10 +6,7 @@ abstract interface class HabitRepository {
   Future<List<HabitWithCreature>> findAllActive(String today, String yesterday);
   Future<int> countActive();
   Future<List<HabitWithCreature>> findArchived();
-  Future<void> createHabit({
-    required String title,
-    required String species,
-  });
+  Future<void> createHabit({required String title, required String species});
   Future<void> updateHabitTitle(String habitId, String newTitle);
   Future<void> deleteHabit(String habitId);
   Future<void> archiveHabit(String habitId);

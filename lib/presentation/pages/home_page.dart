@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/providers.dart';
 import '../widgets/habit_card_widget.dart';
+import '../dialogs/add_habit_dialog.dart';
 import 'archived_habits_page.dart';
 
 class HomePage extends ConsumerWidget {
@@ -99,7 +100,12 @@ class HomePage extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddHabitDialog(context, ref),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => const AddHabitDialog(),
+          );
+        },
         child: const Icon(Icons.add),
       ),
     );
