@@ -131,49 +131,41 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  void _showBackupDialog(BuildContext context, String title, String initialText, {required bool isExport, required WidgetRef ref}) {
-    final controller = TextEditingController(text: initialText);
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          maxLines: 8,
-          readOnly: isExport,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            hintText: isExport ? '' : 'ここにJSONを貼り付けてください',
+  Future<void> _checkAndShowSimplificationSuggestion(
+    BuildContext context, WidgetRef ref, String habitId) async {
+    final shouldSuggest = await ref
+        .read(habitListProvider.notifier)
+        .checkConsecutiveMissed(habitId);
+
+    if (shouldSuggest && context.mounted) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('目標の見直し提案'),
+          content: const Text(
+            '3回連続で未達成になりました。\n'
+            '無理をせず、まずは「最低ライン」の達成から再開してみませんか？',
           ),
-          style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('閉じる')),
-          if (!isExport)
-            FilledButton(
-              onPressed: () async {
-                try {
-                  await ref.read(backupServiceProvider).importFromJson(controller.text);
-                  ref.read(habitListProvider.notifier).ref.invalidateSelf();
-                  if (ctx.mounted) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('データを正常に復元しました。')),
-                    );
-                  }
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('復元に失敗しました: $e'), backgroundColor: Colors.red),
-                    );
-                  }
-                }
-              },
-              child: const Text('復元実行'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('このまま続ける'),
             ),
-        ],
-      ),
-    );
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('最低ラインから無理なく再開していきましょう！'),
+                  ),
+                );
+              },
+              child: const Text('了解'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -431,11 +423,15 @@ class HomePage extends ConsumerWidget {
                                       currentPoints: habit.totalPoints,
                                     );
                                 ref.invalidate(habitChartProvider(habit.habitId));
+
+                                if (context.mounted) {
+                                  // 未達成記録後に3回連続チェックを実行
+                                  await _checkAndShowSimplificationSuggestion(
+                                      context, ref, habit.habitId);
+                                }
                               },
-                              style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.red.shade100),
-                              child: const Text('未達成',
-                                  style: TextStyle(color: Colors.red)),
+                              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
+                              child: const Text('未達成', style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),

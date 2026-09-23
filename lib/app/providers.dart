@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:drift/drift.dart';
 
 import '../data/database/app_database.dart';
 import '../data/repositories/habit_repository_impl.dart';
@@ -8,6 +9,7 @@ import '../domain/services/growth_engine.dart';
 import '../domain/services/day_resolver.dart';
 import '../domain/models/habit_with_creature.dart';
 import '../domain/services/chart_builder.dart';
+import '../domain/services/statistics_calculator.dart';
 import '../application/services/backup_service.dart';
 
 // --- インフラ層のProvider ---
@@ -33,6 +35,10 @@ final habitChartProvider = FutureProvider.family<List<ChartPoint>, String>((ref,
     startDay: startDay,
     endDay: today,
   );
+});
+
+final statisticsCalculatorProvider = Provider<StatisticsCalculator>((ref) {
+  return const StatisticsCalculatorImpl();
 });
 
 // --- RepositoryのProvider ---
@@ -125,6 +131,19 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   Future<void> archiveHabit(String habitId) async {
     await ref.read(habitRepositoryProvider).archiveHabit(habitId);
     ref.invalidateSelf();
+  }
+
+  Future<bool> checkConsecutiveMissed(String habitId) async {
+    final db = ref.read(databaseProvider);
+    final records = await (db.select(db.dayRecords)
+          ..where((tbl) => tbl.habitId.equals(habitId))
+          ..orderBy([(tbl) => OrderingTerm.desc(tbl.day)])
+          ..limit(3))
+        .get();
+
+    final states = records.map((r) => r.state).toList();
+    final calculator = ref.read(statisticsCalculatorProvider);
+    return calculator.shouldSuggestSimplification(states);
   }
 }
 
