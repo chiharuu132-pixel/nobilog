@@ -160,7 +160,7 @@ class HomePage extends ConsumerWidget {
                                 await ref.read(habitListProvider.notifier).recordMinimum(habit.habitId);
                                 ref.invalidate(habitChartProvider(habit.habitId));
                               },
-                              child: const Text('最低'),
+                              child: const Text('最低限'),
                             ),
                             OutlinedButton(
                               onPressed: () async {
