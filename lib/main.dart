@@ -1,6 +1,9 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'app/providers.dart'; // 先ほど作成したファイル
+
+import 'app/providers.dart';
+import 'dart:math' as math;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,12 +41,11 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // データベースから非同期で読み込まれた状態を監視
     final habitsAsync = ref.watch(habitListProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('のびログ (DB連携版)'),
+        title: const Text('のびログ (チャート表示)'),
       ),
       body: habitsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -80,25 +82,45 @@ class HomePage extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // lib/main.dart の Wrap Widget部分に追加
+
+                      // --- 折れ線チャート表示部 ---
+                      SizedBox(
+                        height: 120,
+                        child: HabitChartWidget(habitId: habit.habitId),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // --- ボタン操作群 ---
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           ElevatedButton(
-                            onPressed: () => ref.read(habitListProvider.notifier).recordStandard(habit.habitId),
+                            onPressed: () async {
+                              await ref.read(habitListProvider.notifier).recordStandard(habit.habitId);
+                              ref.invalidate(habitChartProvider(habit.habitId));
+                            },
                             child: const Text('通常達成', textAlign: TextAlign.center),
                           ),
                           ElevatedButton(
-                            onPressed: () => ref.read(habitListProvider.notifier).recordMinimum(habit.habitId),
+                            onPressed: () async {
+                              await ref.read(habitListProvider.notifier).recordMinimum(habit.habitId);
+                              ref.invalidate(habitChartProvider(habit.habitId));
+                            },
                             child: const Text('最低達成', textAlign: TextAlign.center),
                           ),
                           OutlinedButton(
-                            onPressed: () => ref.read(habitListProvider.notifier).recordRest(habit.habitId),
+                            onPressed: () async {
+                              await ref.read(habitListProvider.notifier).recordRest(habit.habitId);
+                              ref.invalidate(habitChartProvider(habit.habitId));
+                            },
                             child: const Text('休息', textAlign: TextAlign.center),
                           ),
                           FilledButton.tonal(
-                            onPressed: () => ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints),
+                            onPressed: () async {
+                              await ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints);
+                              ref.invalidate(habitChartProvider(habit.habitId));
+                            },
                             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade100),
                             child: const Text('未達成', textAlign: TextAlign.center, style: TextStyle(color: Colors.red)),
                           ),
@@ -114,11 +136,64 @@ class HomePage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // テスト用のダミー習慣を登録
           ref.read(habitListProvider.notifier).addDummyHabit('テスト習慣 ${DateTime.now().second}');
         },
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class HabitChartWidget extends ConsumerWidget {
+  final String habitId;
+
+  const HabitChartWidget({super.key, required this.habitId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final chartAsync = ref.watch(habitChartProvider(habitId));
+
+    return chartAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => const Center(child: Text('チャート読み込み失敗')),
+      data: (points) {
+        if (points.isEmpty) return const SizedBox.shrink();
+
+        final spots = <FlSpot>[];
+        double maxVal = 0;
+        for (int i = 0; i < points.length; i++) {
+          final val = points[i].totalPoints.toDouble();
+          spots.add(FlSpot(i.toDouble(), val));
+          if (val > maxVal) maxVal = val;
+        }
+
+        // Y軸の下限を0に固定し、上限は最低30pt（または最大値の1.2倍）に設定
+        final maxY = math.max(30.0, maxVal * 1.2);
+
+        return LineChart(
+          LineChartData(
+            minY: 0,     // ← 追加: 下限を0に固定
+            maxY: maxY,  // ← 追加: 成長に合わせて上限を動的に設定
+            gridData: const FlGridData(show: false),
+            titlesData: const FlTitlesData(show: false),
+            borderData: FlBorderData(show: false),
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                color: Theme.of(context).colorScheme.primary,
+                barWidth: 3,
+                isStrokeCapRound: true,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(
+                  show: true,
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

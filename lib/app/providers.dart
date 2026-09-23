@@ -7,6 +7,8 @@ import '../domain/services/evolution_engine.dart';
 import '../domain/services/growth_engine.dart';
 import '../domain/services/day_resolver.dart';
 import '../domain/models/habit_with_creature.dart';
+import '../domain/services/chart_builder.dart';
+import '../core/local_date.dart';
 
 // --- インフラ層のProvider ---
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -18,6 +20,20 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 final growthEngineProvider = Provider<GrowthEngine>((ref) => const GrowthEngineImpl());
 final evolutionEngineProvider = Provider<EvolutionEngine>((ref) => const EvolutionEngineImpl());
 final dayResolverProvider = Provider<DayResolver>((ref) => const DayResolverImpl());
+
+final habitChartProvider = FutureProvider.family<List<ChartPoint>, String>((ref, habitId) async {
+  final repo = ref.watch(habitRepositoryProvider);
+  final dayResolver = ref.watch(dayResolverProvider);
+  
+  final today = dayResolver.resolveOperationalDay(DateTime.now());
+  final startDay = today.addDays(-13); // 直近14日間
+
+  return repo.getChartSeries(
+    habitId: habitId,
+    startDay: startDay,
+    endDay: today,
+  );
+});
 
 // --- RepositoryのProvider ---
 final habitRepositoryProvider = Provider<HabitRepository>((ref) {

@@ -4,6 +4,8 @@ import '../../domain/models/habit_with_creature.dart';
 import '../../domain/repositories/habit_repository.dart';
 import '../../domain/services/evolution_engine.dart';
 import '../database/app_database.dart';
+import '../../domain/services/chart_builder.dart';
+import '../../core/local_date.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
   final AppDatabase db;
@@ -121,4 +123,27 @@ class HabitRepositoryImpl implements HabitRepository {
           );
     });
   }
+  @override
+Future<List<ChartPoint>> getChartSeries({
+  required String habitId,
+  required LocalDate startDay,
+  required LocalDate endDay,
+}) async {
+  final grants = await (db.select(db.growthGrants)
+        ..where((tbl) => tbl.habitId.equals(habitId)))
+      .get();
+
+  // 日付ごとの増減量を集計
+  final dailyGrants = <String, int>{};
+  for (final grant in grants) {
+    dailyGrants[grant.day] = (dailyGrants[grant.day] ?? 0) + grant.amount;
+  }
+
+  const builder = ChartBuilderImpl();
+  return builder.buildSeries(
+    dailyGrants: dailyGrants,
+    startDay: startDay,
+    endDay: endDay,
+  );
+}
 }

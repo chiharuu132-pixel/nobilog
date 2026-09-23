@@ -12,6 +12,6 @@ void main() {
     );
 
     // アプリタイトルが表示されているか確認
-    expect(find.text('のびログ (v1.1 Demo)'), findsOneWidget);
+    expect(find.text('のびログ'), findsOneWidget);
   });
 }

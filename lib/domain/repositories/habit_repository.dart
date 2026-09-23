@@ -1,4 +1,6 @@
 import '../models/habit_with_creature.dart';
+import '../../core/local_date.dart';
+import '../../domain/services/chart_builder.dart';
 
 abstract interface class HabitRepository {
   Future<List<HabitWithCreature>> findAllActive();
@@ -11,5 +13,12 @@ abstract interface class HabitRepository {
     required String day,
     required String state,
     required int deltaPoints,
+  });
+  
+  /// チャート描画用の履歴系列を取得する
+  Future<List<ChartPoint>> getChartSeries({
+    required String habitId,
+    required LocalDate startDay,
+    required LocalDate endDay,
   });
 }
