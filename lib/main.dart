@@ -80,6 +80,7 @@ class HomePage extends ConsumerWidget {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      // lib/main.dart の Wrap Widget部分に追加
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
@@ -91,6 +92,10 @@ class HomePage extends ConsumerWidget {
                           ElevatedButton(
                             onPressed: () => ref.read(habitListProvider.notifier).recordMinimum(habit.habitId),
                             child: const Text('最低達成', textAlign: TextAlign.center),
+                          ),
+                          OutlinedButton(
+                            onPressed: () => ref.read(habitListProvider.notifier).recordRest(habit.habitId),
+                            child: const Text('休息', textAlign: TextAlign.center),
                           ),
                           FilledButton.tonal(
                             onPressed: () => ref.read(habitListProvider.notifier).recordMissed(habit.habitId, habit.totalPoints),

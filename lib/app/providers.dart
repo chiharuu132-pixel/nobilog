@@ -5,6 +5,7 @@ import '../data/repositories/habit_repository_impl.dart';
 import '../domain/repositories/habit_repository.dart';
 import '../domain/services/evolution_engine.dart';
 import '../domain/services/growth_engine.dart';
+import '../domain/services/day_resolver.dart';
 import '../domain/models/habit_with_creature.dart';
 
 // --- インフラ層のProvider ---
@@ -16,6 +17,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final growthEngineProvider = Provider<GrowthEngine>((ref) => const GrowthEngineImpl());
 final evolutionEngineProvider = Provider<EvolutionEngine>((ref) => const EvolutionEngineImpl());
+final dayResolverProvider = Provider<DayResolver>((ref) => const DayResolverImpl());
 
 // --- RepositoryのProvider ---
 final habitRepositoryProvider = Provider<HabitRepository>((ref) {
@@ -28,29 +30,32 @@ final habitRepositoryProvider = Provider<HabitRepository>((ref) {
 class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   @override
   Future<List<HabitWithCreature>> build() async {
-    // DBから最新の習慣と累積ポイントを読み込む
     return ref.watch(habitRepositoryProvider).findAllActive();
   }
 
-  /// テスト用の習慣追加メソッド
   Future<void> addDummyHabit(String title) async {
     await ref.read(habitRepositoryProvider).createHabit(
       title: title,
       species: 'speciesA',
     );
-    // 状態を破棄してbuild()を再実行し、UIを更新
     ref.invalidateSelf();
+  }
+
+  /// 現在時刻から運用日文字列を取得
+  String _getOperationalDay() {
+    final resolver = ref.read(dayResolverProvider);
+    return resolver.resolveOperationalDay(DateTime.now()).toIso8601Date();
   }
 
   /// 通常ライン達成
   Future<void> recordStandard(String habitId) async {
     final engine = ref.read(growthEngineProvider);
     final decision = engine.decideStandard();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final day = _getOperationalDay();
 
     await ref.read(habitRepositoryProvider).applyGrowth(
       habitId: habitId,
-      day: today,
+      day: day,
       state: 'standard',
       deltaPoints: decision.amount,
     );
@@ -61,11 +66,11 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   Future<void> recordMinimum(String habitId) async {
     final engine = ref.read(growthEngineProvider);
     final decision = engine.decideMinimum();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final day = _getOperationalDay();
 
     await ref.read(habitRepositoryProvider).applyGrowth(
       habitId: habitId,
-      day: today,
+      day: day,
       state: 'minimum',
       deltaPoints: decision.amount,
     );
@@ -76,13 +81,26 @@ class HabitListNotifier extends AsyncNotifier<List<HabitWithCreature>> {
   Future<void> recordMissed(String habitId, int currentPoints) async {
     final engine = ref.read(growthEngineProvider);
     final decision = engine.decidePenalty(currentPoints: currentPoints);
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final day = _getOperationalDay();
 
     await ref.read(habitRepositoryProvider).applyGrowth(
       habitId: habitId,
-      day: today,
-      state: 'missed', 
-      deltaPoints: decision.amount, // この値はマイナスになる
+      day: day,
+      state: 'missed',
+      deltaPoints: decision.amount,
+    );
+    ref.invalidateSelf();
+  }
+
+  /// 休息日（ポイント増減なし）
+  Future<void> recordRest(String habitId) async {
+    final day = _getOperationalDay();
+
+    await ref.read(habitRepositoryProvider).applyGrowth(
+      habitId: habitId,
+      day: day,
+      state: 'rest',
+      deltaPoints: 0, // ポイント増減なし
     );
     ref.invalidateSelf();
   }
