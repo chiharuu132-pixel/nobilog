@@ -15,13 +15,14 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
   final _titleController = TextEditingController();
   
   // 選択された生き物の種族 (初期値: "1")
-  String _selectedSpecies = '1';
+  String _selectedSpecies = 'ham';
 
   // 生き物の選択肢定義
   final List<Map<String, String>> _speciesOptions = const [
-    {'value': '1', 'label': '植物', 'description': '芽から木へと育ちます'},
-    {'value': '2', 'label': '鳥', 'description': '卵からひよこ、鳥へ育ちます'},
-    {'value': '3', 'label': '猫', 'description': '足跡から猫、ライオンへ育ちます'},
+    {'value': 'ham', 'label': 'ハム', 'description': 'ハムスター、飼いたいですよね'},
+    {'value': 'shiba', 'label': 'しば', 'description': '喧嘩でチワワに負けた過去があります'},
+    {'value': 'neko', 'label': 'ねこ', 'description': ''},
+    {'value': 'nazo', 'label': '？', 'description': '謎の生き物です。育ててみましょう'},
   ];
 
   @override
@@ -37,7 +38,7 @@ class _AddHabitDialogState extends ConsumerState<AddHabitDialog> {
     // リポジトリ経由で DB へ保存
     await ref.read(habitRepositoryProvider).createHabit(
           title: title,
-          species: _selectedSpecies, // "1", "2", "3" のいずれかが渡る
+          species: _selectedSpecies, // "ham"など
         );
 
     if (mounted) {

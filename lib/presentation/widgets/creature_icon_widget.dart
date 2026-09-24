@@ -16,9 +16,7 @@ class CreatureIconWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 画像アセットのダミーパスを取得
     final String? assetPath = _getCreatureImagePath(species, stage);
-    // フォールバック用の絵文字を取得
     final String emoji = _getCreatureEmoji(species, stage);
 
     return Transform.scale(
@@ -33,8 +31,12 @@ class CreatureIconWidget extends StatelessWidget {
                   width: radius * 2,
                   height: radius * 2,
                   fit: BoxFit.cover,
-                  // 画像ファイルが存在しない・読み込めない場合は絵文字を表示する
+                  // 実際に画像の読み込みに失敗した時だけ実行される
                   errorBuilder: (context, error, stackTrace) {
+                    debugPrint(
+                      '【フォールバック発生】画像が読み込めないため絵文字を表示します: '
+                      'path = $assetPath, species = $species, stage = $stage',
+                    );
                     return Text(
                       emoji,
                       style: TextStyle(fontSize: radius * 0.9),
@@ -42,61 +44,38 @@ class CreatureIconWidget extends StatelessWidget {
                   },
                 ),
               )
-            : Text(
-                emoji,
-                style: TextStyle(fontSize: radius * 0.9),
+            : Builder(
+                builder: (context) {
+                  debugPrint(
+                    '【フォールバック発生】assetPath が null のため絵文字を表示します: '
+                    'species = $species, stage = $stage',
+                  );
+                  return Text(
+                    emoji,
+                    style: TextStyle(fontSize: radius * 0.9),
+                  );
+                },
               ),
       ),
     );
   }
 
-  String _normalizeSpecies(String species) {
-    switch (species.toLowerCase()) {
-      case 'plant':
-      case '植物':
-        return '1';
-      case 'bird':
-      case '鳥':
-      case 'chick':
-        return '2';
-      case 'cat':
-      case '猫':
-        return '3';
-      case 'fish':
-      case '魚':
-        return '3';
-      default:
-        return species.toLowerCase();
-    }
-  }
-
-  /// 画像ファイルパスの取得（例: assets/images/creatures/creatureplant_1.png）
+  /// 画像ファイルパスの取得
   String? _getCreatureImagePath(String species, int stage) {
-    final normalized = _normalizeSpecies(species);
-    return 'assets/images/creatures/creature${normalized}_$stage.png';
+    return 'assets/images/creatures/${species}_$stage.png';
   }
 
   /// 画像がない場合・読み込み失敗時のバックアップ用絵文字
   String _getCreatureEmoji(String species, int stage) {
     switch (species) {
-      case '1':
-      case 'plant':
-      case '植物':
-        if (stage <= 1) return '🌱';
-        if (stage == 2) return '🌿';
-        return '🌳';
+      case 'ham':
+        return '🐹';
 
-      case '2':
-      case 'bird':
-      case '鳥':
-      case 'chick':
-        if (stage <= 1) return '🐣';
-        if (stage == 2) return '🐥';
-        return '🐔';
+      case 'shiba':
+        if (stage <= 1) return '🐾';
+        return '🐕';
 
-      case '3':
-      case 'cat':
-      case '猫':
+      case 'neko':
         if (stage <= 1) return '🐾';
         if (stage == 2) return '🐱';
         return '🦁';
