@@ -4,15 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../domain/models/habit_with_creature.dart';
 import '../pages/habit_detail_page.dart';
+import 'creature_display_widget.dart';
 import 'habit_chart_widget.dart';
-import 'creature_icon_widget.dart';
 
 class HabitCardWidget extends ConsumerWidget {
   final HabitWithCreature habit;
 
   const HabitCardWidget({super.key, required this.habit});
 
-  @override
+@override
   Widget build(BuildContext context, WidgetRef ref) {
     final isRecordedToday =
         habit.todayRecordState != null && habit.todayRecordState != 'cancelled';
@@ -34,11 +34,20 @@ class HabitCardWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 証券アプリ風ヘッダー（アイコン・タイトル・現在値）
+              // 1. ヘッダー（タイトル・現在値・メニュー）
               _buildHeader(context, ref),
               const SizedBox(height: 16),
 
-              // 軸付きミニチャート（タップイベント無効化済み）
+              // ★ 2. 動物メイン表示エリア（新しく切り出したウィジェット）
+              CreatureDisplayWidget(
+                species: habit.species,
+                stage: habit.stage,
+                scale: habit.visualScale,
+                height: 110, // グラフと同じ高さに指定
+              ),
+              const SizedBox(height: 16),
+
+              // 3. 軸付きミニチャート
               SizedBox(
                 height: 110,
                 child: HabitChartWidget(
@@ -68,22 +77,11 @@ class HabitCardWidget extends ConsumerWidget {
     );
   }
 
-  // --- 内部パーツ Widget ---
-
-  /// 証券アプリ銘柄表示風ヘッダー
+  /// ヘッダー（小アイコンを削除し、タイトルとポイント表示を広々配置）
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // ★ アイコン（生物の種族と段階に応じた画像・絵文字表示）
-        CreatureIconWidget(
-          species: habit.species,
-          stage: habit.stage,
-          scale: habit.visualScale,
-          radius: 22,
-        ),
-        const SizedBox(width: 12),
-
         // 習慣名（銘柄名）
         Expanded(
           child: Column(
@@ -146,6 +144,7 @@ class HabitCardWidget extends ConsumerWidget {
     );
   }
 
+  // --- 以下、ダイアログ・ボタン処理（既存のまま） ---
   Widget _buildArchiveButton(BuildContext context, WidgetRef ref) {
     return Container(
       width: double.infinity,
@@ -259,8 +258,6 @@ class HabitCardWidget extends ConsumerWidget {
       ],
     );
   }
-
-  // --- ロジック・ダイアログ処理 ---
 
   Future<void> _recordToday(WidgetRef ref, String targetState) async {
     await ref.read(habitListProvider.notifier).recordForDay(
