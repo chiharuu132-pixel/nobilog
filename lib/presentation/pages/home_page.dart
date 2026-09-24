@@ -13,51 +13,51 @@ import 'archived_habits_page.dart';
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
-  Future<void> _showAddHabitDialog(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('新しい習慣を作成'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '例: 毎朝のランニング',
-              helperText: '※最大3件まで登録可能',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('キャンセル'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final success = await ref
-                    .read(habitListProvider.notifier)
-                    .createHabit(controller.text);
+  // Future<void> _showAddHabitDialog(BuildContext context, WidgetRef ref) async {
+  //   final controller = TextEditingController();
+  //   await showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: const Text('新しい習慣を作成'),
+  //         content: TextField(
+  //           controller: controller,
+  //           decoration: const InputDecoration(
+  //             hintText: '例: 毎朝のランニング',
+  //             helperText: '※最大3件まで登録可能',
+  //           ),
+  //           autofocus: true,
+  //         ),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.of(context).pop(),
+  //             child: const Text('キャンセル'),
+  //           ),
+  //           FilledButton(
+  //             onPressed: () async {
+  //               final success = await ref
+  //                   .read(habitListProvider.notifier)
+  //                   .createHabit(controller.text);
 
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  if (!success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('アクティブな習慣は最大3件までです。'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('追加'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  //               if (context.mounted) {
+  //                 Navigator.of(context).pop();
+  //                 if (!success) {
+  //                   ScaffoldMessenger.of(context).showSnackBar(
+  //                     const SnackBar(
+  //                       content: Text('アクティブな習慣は最大3件までです。'),
+  //                       backgroundColor: Colors.orange,
+  //                     ),
+  //                   );
+  //                 }
+  //               }
+  //             },
+  //             child: const Text('追加'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
