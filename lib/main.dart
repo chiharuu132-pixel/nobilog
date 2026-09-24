@@ -1,7 +1,9 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'presentation/pages/home_page.dart';
+import 'presentation/theme/app_theme.dart'; // 作成したテーマファイルをインポート
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,20 +17,13 @@ class NobilogApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'のびログ',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.green,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      // 別ファイルに切り出したテーマを適用
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      
+      // 端末の設定（ライト/ダーク）に合わせて自動で切り替える
+      themeMode: ThemeMode.system, 
+      
       home: const HomePage(),
     );
   }
