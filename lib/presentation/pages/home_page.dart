@@ -8,9 +8,9 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/providers.dart';
 import '../widgets/habit_card_widget.dart';
-// import '../dialogs/add_habit_dialog.dart'; // ← ダイアログのインポートを削除
-import 'add_habit_page.dart'; // ← 新しく作成したページのインポートを追加
+import 'add_habit_page.dart';
 import 'archived_habits_page.dart';
+import 'how_to_use_page.dart'; // ★ 使い方ページをインポート
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -23,6 +23,19 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('のびログ'),
         actions: [
+          // ★ 使い方（iマーク）ボタンを追加
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: '使い方',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HowToUsePage(),
+                ),
+              );
+            },
+          ),
           PopupMenuButton<String>(
             onSelected: (value) => _handleMenuSelection(context, ref, value),
             itemBuilder: (context) => [
@@ -57,7 +70,6 @@ class HomePage extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // --- ダイアログからページ遷移に変更 ---
           Navigator.push(
             context,
             MaterialPageRoute(

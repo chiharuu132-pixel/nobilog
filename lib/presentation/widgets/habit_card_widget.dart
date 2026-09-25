@@ -235,16 +235,16 @@ class HabitCardWidget extends ConsumerWidget {
       children: [
         ElevatedButton(
           onPressed: () => _recordToday(ref, 'standard'),
-          child: const Text('通常'),
+          child: const Text('超達成'),
         ),
         ElevatedButton(
           onPressed: () => _recordToday(ref, 'minimum'),
-          child: const Text('最低'),
+          child: const Text('達成'),
         ),
-        OutlinedButton(
-          onPressed: () => _recordToday(ref, 'rest'),
-          child: const Text('休息'),
-        ),
+        // OutlinedButton(
+        //   onPressed: () => _recordToday(ref, 'rest'),
+        //   child: const Text('お休み'),
+        // ),
         FilledButton.tonal(
           onPressed: () async {
             await _recordToday(ref, 'missed');
