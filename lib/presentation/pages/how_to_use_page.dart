@@ -23,7 +23,9 @@ class HowToUsePage extends StatelessWidget {
             icon: Icons.check_circle_outline,
             title: '2. 毎日の達成を記録する',
             description:
-                '習慣を達成したらカードの「達成」ボタンをタップ！日々の頑張りが記録されていきます。',
+                '習慣を達成したらカードの「達成」ボタンをタップ！日々の頑張りが記録されていきます。\n\n'
+                '「超達成」：\n目標以上に頑張ったときに押しましょう！\n\n'
+                '「未達成」：\n目標達成できなかったときに押しましょう。\nptはかなり下がってしまいます...'
           ),
           _UsageSectionCard(
             icon: Icons.pets,
